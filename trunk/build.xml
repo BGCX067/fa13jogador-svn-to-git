@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build" name="fa13jogador">
+    <property environment="env"/>
+    <property name="org.eclipse.swt.location" value="./lib/swt"/> 
+    <property name="swt.version" value="3.6.1"/> 
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <property file="build.credentials.properties" />
+    <property name="mainClassFullName" value="com.fa13.build.gui.MainGUI" />
+    <taskdef 
+        classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask" 
+        classpath="./lib/ant-googlecode-0.0.2.jar" 
+        name="gcupload" />
+    <taskdef 
+        classname="net.sf.launch4j.ant.Launch4jTask"
+        classpath="./lib/launch4j/launch4j.jar :./lib/launch4j/lib/xstream.jar" 
+        name="launch4j" />
+    <taskdef 
+        classname="net.sourceforge.jarbundler.JarBundler"
+        classpath="./lib/jarbundler-2.2.0.jar" 
+        name="jarbundler" />
+    <typedef resource="org/tigris/subversion/svnant/svnantlib.xml" 
+        classpath="./lib/svn/svnant.jar :./lib/svn/svnClientAdapter.jar" />
+
+    <target name="buildWindows" depends="buildWindows32bit,buildWindows64bit" if="isWindows"/>
+    <target name="buildLinux" depends="buildLinux32bit,buildLinux64bit" if="isLinux"/>
+    <target name="buildMacOS" depends="buildMacOS32bit,buildMacOS64bit" if="isMacOS"/> 
+    
+    <target name="buildWindows32bit" if="is32bit">
+        <property name="swt.classpath" value="${org.eclipse.swt.location}/swt-${swt.version}-win32-win32-x86.jar"/>
+        <javac encoding="UTF-8" destdir="bin" source="${source}" target="${target}" includeantruntime="false" classpath="${swt.classpath}">
+            <src path="src"/>
+        </javac>
+    </target>
+    <target name="buildWindows64bit" if="is64bit">
+        <property name="swt.classpath" value="${org.eclipse.swt.location}/swt-${swt.version}-win32-win32-x86_64.jar"/>
+        <javac encoding="UTF-8" destdir="bin" source="${source}" target="${target}" includeantruntime="false" classpath="${swt.classpath}">
+            <src path="src"/>
+        </javac>
+    </target>
+    <target name="buildLinux32bit" if="is32bit">
+        <property name="swt.classpath" value="${org.eclipse.swt.location}/swt-${swt.version}-gtk-linux-x86.jar"/>
+        <javac encoding="UTF-8" destdir="bin" source="${source}" target="${target}" includeantruntime="false" classpath="${swt.classpath}">
+            <src path="src"/>
+        </javac>
+    </target>
+    <target name="buildLinux64bit" if="is64bit">
+        <property name="swt.classpath" value="${org.eclipse.swt.location}/swt-${swt.version}-gtk-linux-x86_64.jar"/>
+        <javac encoding="UTF-8" destdir="bin" source="${source}" target="${target}" includeantruntime="false" classpath="${swt.classpath}">
+            <src path="src"/>
+        </javac>
+    </target>
+    <target name="buildMacOS32bit" if="is32bit">
+        <property name="swt.classpath" value="${org.eclipse.swt.location}/swt-${swt.version}-cocoa-macosx-x86.jar"/>
+        <javac encoding="UTF-8" destdir="bin" source="${source}" target="${target}" includeantruntime="false" classpath="${swt.classpath}">
+            <src path="src"/>
+        </javac>
+    </target>
+    <target name="buildMacOS64bit" if="is64bit">
+        <property name="swt.classpath" value="${org.eclipse.swt.location}/swt-${swt.version}-cocoa-macosx-x86_64.jar"/>
+        <javac encoding="UTF-8" destdir="bin" source="${source}" target="${target}" includeantruntime="false" classpath="${swt.classpath}">
+            <src path="src"/>
+        </javac>
+    </target>
+    
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <svn javahl="false">
+            <wcVersion path="."/>
+        </svn>
+    </target>
+    
+    <target name="clean">
+        <delete dir="bin"/>
+        <delete>
+            <fileset dir="." includes="*.jar"/>
+            <fileset dir="." includes="*.exe"/>
+            <fileset dir="." includes="*.dmg"/>
+        </delete>
+    </target>
+    
+    <target name="build-platform">
+        <jar destfile="./fa13jogador-${output-platform-suffix}.jar">
+            <manifest>
+                <attribute name="Main-Class" value="${mainClassFullName}" />
+                <attribute name="Class-Path" value="." />
+            </manifest>
+            <fileset dir="./bin/" />
+            <zipfileset excludes="META-INF/*.SF" src="${org.eclipse.swt.location}/swt-${swt.version}-${platform-suffix}.jar" />
+        </jar>
+    </target>
+    
+    <target name="build-project" depends="init">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        
+        <condition property="isWindows" value="true">
+            <os family="windows"/>
+        </condition>
+        <property name="isWindows" value="false"/>
+        
+        <condition property="isLinux" value="true">
+            <and>
+                <os family="unix"/>
+                <not>
+                    <os family="mac"/>
+                </not>
+            </and>
+        </condition>
+        <property name="isLinux" value="false"/>
+        
+        <condition property="isMacOS" value="true">
+            <and>
+                <os family="mac"/>
+                <os family="unix"/>
+            </and>
+        </condition>
+        <property name="isMacOS" value="false"/>
+        
+        <condition property="is32bit" value="true">
+            <os arch="x86"/>
+        </condition>
+        <property name="is32bit" value="false"/>
+        
+        <condition property="is64bit" value="true">
+            <or>
+                <os arch="amd64"/>
+                <os arch="x86_64"/>
+            </or>
+        </condition>
+        <property name="is64bit" value="false"/>
+        
+        <antcall target="buildWindows" />
+        <antcall target="buildLinux" />
+        <antcall target="buildMacOS" />
+    </target>
+    
+    <target name="build" depends="build-project">
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="win32-win32-x86" />
+            <param name="output-platform-suffix" value="win32-x86" />
+        </antcall>
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="win32-win32-x86_64" />
+            <param name="output-platform-suffix" value="win32-x86_64" />
+        </antcall>
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="cocoa-macosx" />
+            <param name="output-platform-suffix" value="macosx-x86" />
+        </antcall>
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="cocoa-macosx-x86_64" />
+            <param name="output-platform-suffix" value="macosx-x86_64" />
+        </antcall>
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="gtk-linux-x86" />
+            <param name="output-platform-suffix" value="gtk-linux-x86" />
+        </antcall>
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="gtk-linux-x86_64" />
+            <param name="output-platform-suffix" value="gtk-linux-x86_64" />
+        </antcall>
+    </target>
+    
+    <target name="build-exe" depends="build-project">
+        <antcall target="build-platform">
+            <param name="platform-suffix" value="win32-win32-x86" />
+            <param name="output-platform-suffix" value="win32-x86" />
+        </antcall>
+        <launch4j configFile="./execonfig.xml" />
+    </target>
+    
+    <target name="build-bundle" if="isMacOS">
+        <jarbundler
+            dir="."
+            name="fa13jogador-${bundle-platform-suffix}"
+            mainclass="${mainClassFullName}"
+            jar="./fa13jogador-${bundle-platform-suffix}.jar"
+            icon="./res/icon.icns"
+            build="${revision.max}"
+            startOnMainThread="true" />
+        <delete>
+            <fileset dir="." includes="fa13jogador-${bundle-platform-suffix}.dmg"/>
+        </delete>
+        <exec executable="hdiutil">
+            <arg line="create -srcfolder fa13jogador-${bundle-platform-suffix}.app fa13jogador-${bundle-platform-suffix}"/>
+        </exec>
+    </target>
+    
+    <target name="buildMacOSbundle" depends="build">
+        <condition property="isMacOS">
+            <os family="mac"/>
+        </condition>
+        <antcall target="build-bundle">
+            <param name="bundle-platform-suffix" value="macosx-x86" />    
+        </antcall>
+        <antcall target="build-bundle">
+            <param name="bundle-platform-suffix" value="macosx-x86_64" />
+        </antcall>
+    </target>
+    
+    <target name="deploy" depends="build">    
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-win32-x86.jar" 
+            targetfilename="fa13jogador-win32-x86.jar"
+            summary="r${revision.max} x86 Windows snapshot"
+            labels="Featured, Type-Executable, OpSys-Windows" />
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-win32-x86_64.jar" 
+            targetfilename="fa13jogador-win32-x86_64.jar"
+            summary="r${revision.max} x64 Windows snapshot"
+            labels="Type-Executable, OpSys-Windows" />
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-gtk-linux-x86.jar" 
+            targetfilename="fa13jogador-gtk-linux-x86.jar"
+            summary="r${revision.max} x86 Linux snapshot"
+            labels="Type-Executable, OpSys-Linux" />
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-gtk-linux-x86_64.jar" 
+            targetfilename="fa13jogador-gtk-linux-x86_64.jar"
+            summary="r${revision.max} x64 Linux snapshot"
+            labels="Type-Executable, OpSys-Linux" />
+    </target>
+    <target name="deploy-exe" depends="build-exe">
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-win32-x86.exe" 
+            targetfilename="fa13jogador-win32-x86.exe"
+            summary="r${revision.max} x86 Windows executable"
+            labels="Featured, Type-Executable, OpSys-Windows" />
+    </target>
+    
+    <target name="deploy-dmg" depends="buildMacOSbundle">
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-macosx-x86.dmg" 
+            targetfilename="fa13jogador-macosx-x86.dmg"
+            summary="r${revision.max} x86 MacOS snapshot bundle"
+            labels="Type-Executable, OpSys-OSX" />
+        <gcupload 
+            username="${gc.username}" 
+            password="${gc.password}"
+            projectname="fa13jogador" 
+            filename="./fa13jogador-macosx-x86_64.dmg" 
+            targetfilename="fa13jogador-macosx-x86_64.dmg"
+            summary="r${revision.max} x64 MacOS snapshot bundle"
+            labels="Type-Executable, OpSys-OSX" />
+    </target>
+</project>
